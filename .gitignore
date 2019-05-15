@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/ants
+ants.so
+ants.dylib
+ants.dll
+ants.a
+ants.lib
+ants-test-*
+*.exe
+*.o
+*.obj
+*.lst
