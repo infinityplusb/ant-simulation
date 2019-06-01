@@ -1,0 +1,194 @@
+module gtkWindow;
+
+import std.stdio;
+
+import gtk.MainWindow;
+import gtk.Main;
+import gtk.Widget;
+import gtk.Button;
+import gdk.Event;
+import gtk.GLArea;
+import gdk.GLContext;
+
+/* the vertex data is constant */
+struct vertex_info {
+  float[3] position;
+  float[3] color;
+};
+
+//static const
+struct vertex_data {
+  vertex_info[3] data;
+  /* =  {
+    { {  0.0f,  0.500f, 0.0f }, { 1.f, 0.f, 0.f } },
+    { {  0.5f, -0.366f, 0.0f }, { 0.f, 1.f, 0.f } },
+    { { -0.5f, -0.366f, 0.0f }, { 0.f, 0.f, 1.f } },
+  };*/
+};
+
+static void init_buffers (guint  position_index,
+              guint  color_index,
+              guint *vao_out)
+{
+    guint vao, buffer;
+
+    /* we need to create a VAO to store the other buffers */
+    glGenVertexArrays (1, &vao);
+    glBindVertexArray (vao);
+
+    /* this is the VBO that holds the vertex data */
+    glGenBuffers (1, &buffer);
+    glBindBuffer (GL_ARRAY_BUFFER, buffer);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (vertex_data), vertex_data, GL_STATIC_DRAW);
+
+    /* enable and set the position attribute */
+    glEnableVertexAttribArray (position_index);
+    glVertexAttribPointer (position_index, 3, GL_FLOAT, GL_FALSE,
+                           sizeof (struct vertex_info),
+                           (GLvoid *) (G_STRUCT_OFFSET (struct vertex_info, position)));
+
+    /* enable and set the color attribute */
+    glEnableVertexAttribArray (color_index);
+    glVertexAttribPointer (color_index, 3, GL_FLOAT, GL_FALSE,
+                           sizeof (struct vertex_info),
+                           (GLvoid *) (G_STRUCT_OFFSET (struct vertex_info, color)));
+
+    /* reset the state; we will re-enable the VAO when needed */
+    glBindBuffer (GL_ARRAY_BUFFER, 0);
+    glBindVertexArray (0);
+
+    /* the VBO is referenced by the VAO */
+    glDeleteBuffers (1, &buffer);
+
+    if (vao_out != NULL)
+    *vao_out = vao;
+}
+
+
+static guint
+create_shader (int          shader_type,
+               const char  *source,
+               GError     **error,
+               guint       *shader_out)
+{
+    guint shader = glCreateShader (shader_type);
+    glShaderSource (shader, 1, &source, NULL);
+    glCompileShader (shader);
+
+    int status;
+    glGetShaderiv (shader, GL_COMPILE_STATUS, &status);
+    if (status == GL_FALSE)
+      {
+        int log_len;
+        glGetShaderiv (shader, GL_INFO_LOG_LENGTH, &log_len);
+
+        char *buffer = g_malloc (log_len + 1);
+        glGetShaderInfoLog (shader, log_len, NULL, buffer);
+
+        g_set_error (error, GLAREA_ERROR, GLAREA_ERROR_SHADER_COMPILATION,
+                     "Compilation failure in %s shader: %s",
+                     shader_type == GL_VERTEX_SHADER ? "vertex" : "fragment",
+                     buffer);
+
+        g_free (buffer);
+
+        glDeleteShader (shader);
+        shader = 0;
+      }
+
+    if (shader_out != NULL)
+      *shader_out = shader;
+
+return shader != 0;
+}
+
+class AntSimWindow : MainWindow
+{
+    string title = "Ant Sim";
+    string bye   = "Good Bye";
+    string message = "Window close button clicked.";
+		string otherMessage = "Button clicked instead.";
+
+
+    this(string title)
+    {
+        super(title);
+        addOnDestroy(delegate void(Widget w) {quitApp(message); });
+
+        setDefaultSize(1280, 400);
+
+        Button button = new Button("End");
+    		button.addOnClicked(delegate void(Button b) {quitApp(otherMessage); });
+
+        GLArea area = new GLArea();
+
+
+    		add(area);
+    		add(button);
+
+        showAll();
+
+    }
+
+    void quitApp(string message)
+    {
+    		writeln("Bye ", message);
+    		Main.quit();
+    }
+
+    static void draw_triangle (GLArea *self)
+    {
+      if (self.program == 0 || self.vao == 0)
+        return;
+
+      /* load our program */
+      glUseProgram (self.program);
+
+      /* update the "mvp" matrix we use in the shader */
+      glUniformMatrix4fv (self.mvp_location, 1, GL_FALSE, & (self.mvp[0]));
+
+      /* use the buffers in the VAO */
+      glBindVertexArray (self.vao);
+
+      /* draw the three vertices as a triangle */
+      glDrawArrays (GL_TRIANGLES, 0, 3);
+
+      /* we finished using the buffers and program */
+      glBindVertexArray (0);
+      glUseProgram (0);
+    }
+}
+
+class ResizeButton : Button                                                     // *** NEW ***
+{
+	this(MainWindow window)
+	{
+		super("Resize Window");
+		addOnClicked(delegate void(Button b) { resizeMe(window); });
+
+	} // this()
+
+
+	void resizeMe(MainWindow window)
+	{
+		int x, y;
+
+		window.getSize(x, y);
+		writeln("x = ", x, "y = ", y);
+
+		// GTK deals in minimum sizes, not absolute sizes, therefore we can set
+		// a minimum size for a window, but not a maximum. Also, we can't set
+		// a new size smaller than the current size.
+		if(x < 640)
+		{
+			window.setSizeRequest(640, 480);
+		}
+		else if(x > 641)
+		{
+			// The effect here is to set a minimum size and it can't be made smaller
+			// after this condition becomes true.
+			writeln("Minimum size is now set. You can shrink it, but not below the minimum size.");
+			window.setSizeRequest(-1, -1);
+		}
+	}
+} // class ResizeButton

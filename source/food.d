@@ -15,8 +15,13 @@ class Food {
 		{
 				foodSupplyLocation.x = _x;
 				foodSupplyLocation.y = _y;
-				foodRegister[to!int(foodRegister.length+1)] = foodSupplyLocation ;
 
 				writefln("Food has dropped at %s, %s", foodSupplyLocation.x, foodSupplyLocation.y);
 		}
+
+    void foodSwap(int foodTaken)
+    {
+        foodSize -= foodTaken;
+        writefln("Food at supply point %s is now %s", index, foodSize);
+    }
 }

@@ -25,11 +25,12 @@ class location{
 				bottom_left.y = _y;
 				width = i_width;
 				height = i_height;
-debug(1)				writefln("Bottom corner of this location is: %d, %d", bottom_left.x, bottom_left.y);
+debug(1)				writefln("Bottom corner of this location is: %f, %f", bottom_left.x, bottom_left.y);
 				foreach(int ant; 1.._numberOfAnts)
-						makeAnt();
+				{}
+						//makeAnt();
 		}
-
+/*
 		ant makeAnt()
 		{
 			auto x = uniform(bottom_left.x, bottom_left.x+width, rnd);
@@ -43,4 +44,5 @@ debug(1)	 writeln(antRegister.length);
 
 			return a;
 		}
+*/
 }
