@@ -3,8 +3,30 @@ module food;
 import std.stdio;
 import std.conv;
 
+import dagon;
+
 import point;
 import ant_simulation;
+
+class NewFood : EntityController
+{
+		this(Entity e){
+				super(e);
+		}
+
+		override void update(double dt)
+		{
+
+        entity.transformation =
+            translationMatrix(entity.position) *
+            entity.rotation.toMatrix4x4 *
+            scaleMatrix(entity.scaling);
+
+        entity.invTransformation = entity.transformation.inverse;
+//				writeln(dt);
+    }
+}
+
 
 class Food {
 		int foodSize = 1_000_000;

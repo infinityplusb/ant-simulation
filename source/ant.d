@@ -3,23 +3,22 @@ module ant;
 import std.stdio;
 import std.random;
 import std.conv;
-import std.math : sin, PI;
+import std.math : sin, PI, sqrt;
 
 import dlib.math.matrix;
 import dlib.math.transformation;
-
 
 import dagon;
 
 import ant_simulation;
 import point;
-// extern (D) ant[int] antRegister;
+
 auto rnd = Random(63);
 
 class NewAnt: EntityController
 {
-
-		bool hasFoundFood = false;
+public:
+		public bool hasFoundFood = false;
 		int foodSupply = 0 ;
 		int foodLocation = 0 ;
 		Vector3f home ;
@@ -28,7 +27,6 @@ class NewAnt: EntityController
 
     this(Entity e){
         super(e);
-				entity.material.diffuse = Color4f(1.0,1.0,0.0,1.0);
     }
 
     override void update(double dt)
@@ -41,7 +39,7 @@ class NewAnt: EntityController
             scaleMatrix(entity.scaling);
 
         entity.invTransformation = entity.transformation.inverse;
-
+//				writeln(dt);
     }
 
 		void setHome(in Vector3f location)
@@ -52,6 +50,10 @@ class NewAnt: EntityController
 
 		void antAction()
 		{
+//				writeln(foodSupply);
+//				writefln("home: %s", home);
+//				writefln("current: %s", entity.position);
+
 				if(foodSupply == 0 || entity.position == home)
 				{
 	debug(2)				writeln("I'm hungry");
@@ -65,6 +67,7 @@ class NewAnt: EntityController
 
 		void lookForFood()
 		{
+				writeln("Looking for Food");
  				if(isFoodAtCurrentLocation())
 				{
 						takeFood();
@@ -78,48 +81,43 @@ class NewAnt: EntityController
 				}
 				else
 				{
-						int move_direction = uniform(1, 5, rnd);
-						switch (move_direction)
-						{
-								case 1:
-										entity.position.x += speed ; break;
-								case 2:
-										entity.position.z += speed ; break;
-								case 3:
-										entity.position.x -= speed ; break;
-								case 4:
-										entity.position.z -= speed ; break;
-								default:
-									throw new Exception("Not sure what to do. Staying still.");
-						}
-						debug(1) writeln(entity.position);
+//						randomWalk();
+						levyFlight();
 				}
 		}
 
 		bool isFoodAtCurrentLocation()
 		{
 				bool isFood = false;
+				writeln("Checking for nearby food");
+			//	writeln(foodRegister);
+			//	writeln(foods);
 				foreach(i; foodRegister.keys)
-						if(foodRegister[i].foodSupplyLocation.x == entity.position.x
+				{
+						auto dx = foodRegister[i].foodSupplyLocation.x - entity.position.x;
+						auto dz = foodRegister[i].foodSupplyLocation.y - entity.position.z;
+
+						auto distance = sqrt(dx * dx + dz * dz);
+			//			writeln(distance);
+						if(distance < 100)
+						{
+								foodLocation = i ;
+								isFood = true ;
+						}
+				}
+					/*	if(foodRegister[i].foodSupplyLocation.x == round(entity.position.x
 							&& foodRegister[i].foodSupplyLocation.y == entity.position.z)
 						{
 								foodLocation = i ;
 								isFood = true;
 						}
+					*/
 				return isFood;
 		}
-
+public:
 		void takeFood()
 		{
 				writeln("Taking food");
-				foreach(i; foodRegister.keys)
-				if(foodRegister[i].foodSupplyLocation.x == entity.position.x
-					&& foodRegister[i].foodSupplyLocation.y == entity.position.z)
-						{
-								foodLocation = i ;
-								foodRegister[i].foodSwap(100);
-						}
-
 				foodSupply += 100;
 		}
 
@@ -165,4 +163,51 @@ class NewAnt: EntityController
 					}
 					debug(1) writeln(entity.position);
 		}
+
+		void randomWalk()
+		{
+				int move_direction = uniform(1, 5, rnd);
+				switch (move_direction)
+				{
+						case 1:
+								entity.position.x += speed ; break;
+						case 2:
+								entity.position.z += speed ; break;
+						case 3:
+								entity.position.x -= speed ; break;
+						case 4:
+								entity.position.z -= speed ; break;
+						default:
+							throw new Exception("Not sure what to do. Staying still.");
+				}
+				debug(1) writeln(entity.position);
+		}
+
+		void levyFlight()
+		{
+				int move_direction = uniform(1, 5, rnd);
+				int move_magnitude = uniform(1, 101, rnd);
+				int move_size = 1;
+
+				if(move_magnitude < 2)
+					move_size = uniform(1,26, rnd);
+
+				switch (move_direction)
+				{
+						case 1:
+								entity.position.x += move_size * speed ; break;
+						case 2:
+								entity.position.z += move_size * speed ; break;
+						case 3:
+								entity.position.x -= move_size * speed ; break;
+						case 4:
+								entity.position.z -= move_size * speed ; break;
+						default:
+							throw new Exception("Not sure what to do. Staying still.");
+				}
+				debug(1) writeln(entity.position);
+		}
+
+
+
 }

@@ -7,6 +7,7 @@ import std.math;
 import dagon;
 import location;
 import ant;
+import food;
 
 auto rnd = Random();
 
@@ -20,9 +21,14 @@ class TestScene: Scene
     NewAnt eAnt;
 
     Entity ants;
+    Entity foods;
 
 //    Entity eMrfixit;
     Actor actor;
+
+    Material antWithFoodMaterial;
+    Material antWithNoFoodMaterial;
+    Material foodSourceMaterial;
 
     this(SceneManager smngr)
     {
@@ -46,30 +52,26 @@ class TestScene: Scene
         mainSun.shadow = true;
         environment.setDayTime(9, 00, 00);
 
-        auto matNoFood = createMaterial();
-        matNoFood.diffuse = Color4f(1.0, 0.2, 0.2, 1.0);
+        antWithFoodMaterial = createMaterial();
+        antWithFoodMaterial.diffuse = Color4f(0.0,1.0,0.0,1.0);
 
-        auto matFood = createMaterial();
-        matFood.diffuse = Color4f(0.1, 0.1, 0.1, 1.0);
+        antWithNoFoodMaterial = createMaterial();
+        antWithNoFoodMaterial.diffuse = Color4f(1.0,0.0,0.0,1.0);
 
-        // Common materials
-        auto matFoodSource = createMaterial();
-        matFoodSource.roughness = 0.9f;
-        matFoodSource.metallic = 0.0f;
-        matFoodSource.culling = false;
-        matFoodSource.diffuse = Color4f(1.0, 0.2, 0.2, 1.0);
+        foodSourceMaterial = createMaterial();
+        foodSourceMaterial.diffuse = Color4f(0.1, 0.1, 0.1, 1.0);
 
         // Common materials
         auto matGround = createMaterial();
         matGround.roughness = 0.9f;
         matGround.metallic = 0.0f;
         matGround.culling = false;
-        matGround.diffuse = Color4f(1.0, 0.2, 1.2, 1.0);
+        matGround.diffuse = Color4f(1.0, 0.2, 0.6, 1.0);
 
         ants = createEntity3D();
 
         // why doesn't more than 1 figure show up?
-        foreach(i; 0..5)
+        foreach(i; 0..2)
         {
             spawnAnt();
         }
@@ -81,13 +83,12 @@ class TestScene: Scene
 // https://github.com/gecko0307/dagon/blob/289c483b91bf8b2b03c6ffc7bf66a2a1538abd69/src/dagon/graphics/shapes.d#L92
 //        ePlaneA.drawable = New!ShapeQuad(assetManager); //Plane(150, 200, 1, assetManager);
 
-        auto x = uniform(-7.5, 7.5, rnd);
-        auto y = uniform(-10.0, 10.0, rnd);
+        foods = createEntity3D();
 
-        auto foodSource = createEntity3D();
-        foodSource.drawable = aOBJFood.mesh;
-        foodSource.material = matFoodSource;
-        foodSource.position = Vector3f(x, 1, y);
+        foreach(i; 0..1)
+        {
+            spawnFood();
+        }
 
 //        auto ePlane = createEntity3D();
 //        ePlane.drawable = New!ShapePlane(100000, 100000, 1, assetManager);
@@ -100,7 +101,7 @@ class TestScene: Scene
 
         auto ant = createEntity3D(ants);
         ant.drawable = aOBJFood.mesh;
-      //  ant.material = matNoFood;
+        ant.material = antWithNoFoodMaterial;
         // ant.position = Vector3f(myRndXPos, 0.0f, myRndYPos);
         ant.rotation = rotationQuaternion(Axis.y, degtorad(180.0f));
         ant.scaling = Vector3f(0.5, 0.5, 0.5);
@@ -109,19 +110,73 @@ class TestScene: Scene
 
         auto antCtrl = New!NewAnt(ant);
         ant.controller = antCtrl;
+
         antCtrl.setHome(Vector3f(myRndXPos, 0.5f, myRndYPos));
 
     }
 
     void spawnFood()
     {
-        
-    }
+        float x = uniform(-7.5, 7.5, rnd);
+        float y = uniform(-10.0, 10.0, rnd);
 
+        auto foodSource = createEntity3D(foods);
+        foodSource.material = foodSourceMaterial;
+        foodSource.drawable = aOBJFood.mesh;
+        foodSource.position = Vector3f(x, 1, y);
+
+        auto foodSpot = New!NewFood(foodSource);
+        foodSource.controller = foodSpot;
+
+    }
 
     override void onStart()
     {
         super.onStart();
+    }
+
+    override void onUpdate(double dt)
+    {
+        super.onUpdate(dt);
+        antFoodSearch();
+// HELP        ants.children[1].controller.setHome(Vector3f(0.0f, 0.0f, 0.0f));
+
+    }
+
+    void antFoodSearch()
+    {
+        foreach(i; ants.children)
+        {
+            foreach(j ; foods.children)
+                if(isCollision(i,j))
+                {
+                    //writeln("I'm hit!!");
+                    i.material = antWithFoodMaterial;
+
+                    //writeln(i.controller.entity.position.x);
+                    //writeln(i.controller.hasFoundFood);
+                    //foreach(fuu ; i.tupleof)
+                    //    writeln(fuu);
+                    //writeln("Controller ... ");
+                    //writeln(i.controller);
+
+                    //foreach(foo; i.controller.tupleof)
+                      //writeln(foo);
+                    //writeln();
+
+                    //writeln("Entity ... ");
+                    //writeln(i.controller.entity);
+
+                    //foreach(foo; i.controller.entity.tupleof)
+                    //  writeln(foo);
+                    //writeln();
+                    //writeln((i.controller*)&hasFoundFood);
+                    // i.controller.setHome(Vector3f(1.0f, 0.5f, 1.0f));
+
+//                    i.takeFood();
+//                    writeln(i.controller.hasFoundFood);
+                }
+        }
     }
 
     bool isCollision(Entity a, Entity b)
@@ -131,7 +186,7 @@ class TestScene: Scene
 
       auto distance = sqrt(dx * dx + dz * dz);
 
-      if(distance < 1)
+      if(distance < 10)
           return true;
       else
           return false;

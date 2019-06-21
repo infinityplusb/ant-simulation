@@ -13,3 +13,7 @@ ants-test-*
 *.o
 *.obj
 *.lst
+
+ants_backup
+
+resources/
