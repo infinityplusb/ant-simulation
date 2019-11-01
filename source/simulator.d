@@ -3,6 +3,8 @@ module simulator;
 import std.random;
 import std.stdio;
 import std.math;
+import std.parallelism;
+import std.conv;
 
 import dagon;
 import location;
@@ -11,17 +13,109 @@ import food;
 
 auto rnd = Random();
 
+BVHTree!Triangle meshesToBVH(Mesh[] meshes)
+{
+    DynamicArray!Triangle tris;
+
+    foreach(mesh; meshes)
+    foreach(tri; mesh)
+    {
+        Triangle tri2 = tri;
+        tri2.v[0] = tri.v[0];
+        tri2.v[1] = tri.v[1];
+        tri2.v[2] = tri.v[2];
+        tri2.normal = tri.normal;
+        tri2.barycenter = (tri2.v[0] + tri2.v[1] + tri2.v[2]) / 3;
+        tris.append(tri2);
+    }
+
+    assert(tris.length);
+    BVHTree!Triangle bvh = New!(BVHTree!Triangle)(tris, 4);
+    tris.free();
+    return bvh;
+}
+
+void collectEntityTrisRecursive(Entity e, ref DynamicArray!Triangle tris)
+{
+    if (e.solid && e.drawable)
+    {
+        e.update(0.0);
+        Matrix4x4f normalMatrix = e.invAbsoluteTransformation.transposed;
+
+        Mesh mesh = cast(Mesh)e.drawable;
+        if (mesh is null)
+        {
+            Terrain t = cast(Terrain)e.drawable;
+            if (t)
+            {
+                mesh = t.collisionMesh;
+            }
+        }
+
+        if (mesh)
+        {
+            foreach(tri; mesh)
+            {
+                Vector3f v1 = tri.v[0];
+                Vector3f v2 = tri.v[1];
+                Vector3f v3 = tri.v[2];
+                Vector3f n = tri.normal;
+
+                v1 = v1 * e.absoluteTransformation;
+                v2 = v2 * e.absoluteTransformation;
+                v3 = v3 * e.absoluteTransformation;
+                n = n * normalMatrix;
+
+                Triangle tri2 = tri;
+                tri2.v[0] = v1;
+                tri2.v[1] = v2;
+                tri2.v[2] = v3;
+                tri2.normal = n;
+                tri2.barycenter = (tri2.v[0] + tri2.v[1] + tri2.v[2]) / 3;
+                tris.append(tri2);
+            }
+        }
+    }
+
+    foreach(c; e.children)
+        collectEntityTrisRecursive(c, tris);
+}
+
+BVHTree!Triangle entitiesToBVH(Entity[] entities)
+{
+    DynamicArray!Triangle tris;
+
+    foreach(e; entities)
+        collectEntityTrisRecursive(e, tris);
+
+    if (tris.length)
+    {
+        BVHTree!Triangle bvh = New!(BVHTree!Triangle)(tris, 4);
+        tris.free();
+        return bvh;
+    }
+    else
+        return null;
+}
+
+
 
 class TestScene: Scene
 {
     OBJAsset aOBJAnt;
     OBJAsset aOBJFood;
 
+    OBJAsset oOBJBarrier;
+
     IQMAsset iqmAnt;
     NewAnt eAnt;
 
     Entity ants;
     Entity foods;
+    Entity barriers;
+
+    NewAnt[ulong] allAnts;
+    NewFood[ulong] allFoods;
 
 //    Entity eMrfixit;
     Actor actor;
@@ -29,6 +123,18 @@ class TestScene: Scene
     Material antWithFoodMaterial;
     Material antWithNoFoodMaterial;
     Material foodSourceMaterial;
+    Material foodSourceBrown;
+    Material foodSourceGreen;
+    Material barrierBlack;
+
+    BVHTree!Triangle bvh;
+    bool haveBVH = false;
+
+    PhysicsWorld world;
+    RigidBody bAnts;
+    RigidBody bFoods;
+    RigidBody bBarriers;
+    RigidBody bGround;
 
     this(SceneManager smngr)
     {
@@ -44,6 +150,9 @@ class TestScene: Scene
 
     override void onAllocate()
     {
+        world = New!PhysicsWorld(assetManager);
+        auto b = world.addDynamicBody(Vector3f(0, 0, 0), 0.0f);
+
         super.onAllocate();
 
         view = New!Freeview(eventManager, assetManager);
@@ -58,8 +167,14 @@ class TestScene: Scene
         antWithNoFoodMaterial = createMaterial();
         antWithNoFoodMaterial.diffuse = Color4f(1.0,0.0,0.0,1.0);
 
-        foodSourceMaterial = createMaterial();
-        foodSourceMaterial.diffuse = Color4f(0.1, 0.1, 0.1, 1.0);
+        foodSourceBrown = createMaterial();
+        foodSourceBrown.diffuse = Color4f(0.1, 0.1, 0.1, 1.0);
+
+        foodSourceGreen = createMaterial();
+        foodSourceGreen.diffuse = Color4f(0.0,1.0,0.0,1.0);
+
+        barrierBlack = createMaterial();
+        barrierBlack.diffuse = Color4f(1.0, 1.0, 1.0, 1.0);
 
         // Common materials
         auto matGround = createMaterial();
@@ -70,65 +185,130 @@ class TestScene: Scene
 
         ants = createEntity3D();
 
-        // why doesn't more than 1 figure show up?
-        foreach(i; 0..2)
-        {
-            spawnAnt();
-        }
+        Vector3f[] testPolygon;
+//        testPolygon ~= Vector3f(4.79751, 4.7647, 1);
+//        testPolygon ~= Vector3f(4.79659, 4.76467, 1);
+//        testPolygon ~= Vector3f(4.79640, 4.76472, 1);
+//        testPolygon ~= Vector3f(4.79736, 4.76575, 1);
+        testPolygon ~= Vector3f(4.79751, 1, 4.7647);
+        testPolygon ~= Vector3f(4.79659, 1, -4.76467);
+//        testPolygon ~= Vector3f(4.79640, -4.76472, 1);
+        testPolygon ~= Vector3f(4.79736, 1, 4.76575);
+
 
         auto ePlaneA = createEntity3D();
         ePlaneA.drawable = New!ShapePlane(15, 20, 1, assetManager);
         ePlaneA.material = matGround;
 
+        auto eTestPlaneB = createEntity3D();
+        eTestPlaneB.drawable = New!ShapePolygon(testPolygon, assetManager);
+        eTestPlaneB.material = matGround;
+
+
 // https://github.com/gecko0307/dagon/blob/289c483b91bf8b2b03c6ffc7bf66a2a1538abd69/src/dagon/graphics/shapes.d#L92
 //        ePlaneA.drawable = New!ShapeQuad(assetManager); //Plane(150, 200, 1, assetManager);
+
+
+        // BVH for castle model to handle collisions
+        bvh = entitiesToBVH(_entities3D.data);
+        haveBVH = true;
+        if (bvh)
+            world.bvhRoot = bvh.root;
+
+
+        // why doesn't more than 1 figure show up?
+        foreach(i; 0..1)
+        {
+            spawnAnt(i, b, world);
+        }
 
         foods = createEntity3D();
 
         foreach(i; 0..1)
         {
-            spawnFood();
+            spawnFood(i, b, world);
         }
 
+        barriers = createEntity3D();
+
+  //      foreach(i; 0..5)
+//        {
+//            spawnBarrier(b, world);
+//        }
 //        auto ePlane = createEntity3D();
 //        ePlane.drawable = New!ShapePlane(100000, 100000, 1, assetManager);
     }
 
     // TODO: Enemies will shoot and collide the ship also.
-    void spawnAnt(){
-        float myRndXPos = uniform(-7.5, 7.5, rnd);
+    void spawnAnt(int i, RigidBody b, ref PhysicsWorld w){
+        float myRndXPos = uniform(-10.0, 10.0, rnd);
         float myRndYPos = uniform(-10.0, 10.0, rnd);
 
         auto ant = createEntity3D(ants);
+
         ant.drawable = aOBJFood.mesh;
         ant.material = antWithNoFoodMaterial;
         // ant.position = Vector3f(myRndXPos, 0.0f, myRndYPos);
         ant.rotation = rotationQuaternion(Axis.y, degtorad(180.0f));
-        ant.scaling = Vector3f(0.5, 0.5, 0.5);
+        ant.scaling = Vector3f(0.25, 0.25, 0.25);
+//        b.scaling = Vector3f(0.25, 0.25, 0.25);
 
         ant.updateTransformation(0.0);
 
-        auto antCtrl = New!NewAnt(ant);
+        auto antCtrl = New!NewAnt(ant, b, w);
+        allAnts[i] = antCtrl;
         ant.controller = antCtrl;
 
-        antCtrl.setHome(Vector3f(myRndXPos, 0.5f, myRndYPos));
-
+        antCtrl.setHome(Vector3f(myRndXPos, 0.25f, myRndYPos));
     }
 
-    void spawnFood()
+    void spawnFood(int i, RigidBody b, ref PhysicsWorld w) //b) //)
     {
-        float x = uniform(-7.5, 7.5, rnd);
+        float x = uniform(-10.0, 10.0, rnd);
         float y = uniform(-10.0, 10.0, rnd);
 
+        int food_type = uniform(1, 3, rnd);
+
         auto foodSource = createEntity3D(foods);
-        foodSource.material = foodSourceMaterial;
+        switch (to!int(std.math.remainder(food_type,2)))
+        {
+            case 0:
+                foodSource.material = foodSourceBrown;
+                break;
+            case 1:
+                foodSource.material = foodSourceGreen;
+                break;
+            default:
+                throw new Exception("Don't know what colour to be.");
+        }
+
         foodSource.drawable = aOBJFood.mesh;
         foodSource.position = Vector3f(x, 1, y);
 
-        auto foodSpot = New!NewFood(foodSource);
+        auto foodSpot = New!NewFood(foodSource, b, w);
         foodSource.controller = foodSpot;
-
+        allFoods[i] = foodSpot;
     }
+
+    void spawnBarrier(RigidBody b, ref PhysicsWorld w) //int i)
+    {
+        float x = uniform(-10.0, 10.0, rnd);
+        float y = uniform(-10.0, 10.0, rnd);
+
+        auto barrierSource = createEntity3D(barriers);
+        barrierSource.material = barrierBlack;
+
+        barrierSource.drawable = aOBJFood.mesh;
+        barrierSource.position = Vector3f(x, 0.25, y);
+        barrierSource.scaling = Vector3f(4.0, 0.25, 0.25);
+//        b.scaling = Vector3f(4.0, 0.25, 0.25);
+
+        auto barrierSpot = New!NewFood(barrierSource, b, w);
+        barrierSource.controller = barrierSpot;
+//        allFoods[i] = foodSpot;
+    }
+
+
 
     override void onStart()
     {
@@ -138,44 +318,35 @@ class TestScene: Scene
     override void onUpdate(double dt)
     {
         super.onUpdate(dt);
-        antFoodSearch();
+        findFoodCheck();
+//        writeln(allAnts[0].foodSupply);
+
 // HELP        ants.children[1].controller.setHome(Vector3f(0.0f, 0.0f, 0.0f));
 
     }
 
-    void antFoodSearch()
+    void findFoodCheck()
     {
-        foreach(i; ants.children)
+//        writeln();
+        foreach(i; 0..allAnts.length)
         {
-            foreach(j ; foods.children)
-                if(isCollision(i,j))
-                {
-                    //writeln("I'm hit!!");
-                    i.material = antWithFoodMaterial;
+          writefln("Ant %s looking for food.", i);
+//          writeln(allFoods.length);
+          foreach(j ; 0..allFoods.length)
+          {
+              writefln("Ant %s looking.", i);
 
-                    //writeln(i.controller.entity.position.x);
-                    //writeln(i.controller.hasFoundFood);
-                    //foreach(fuu ; i.tupleof)
-                    //    writeln(fuu);
-                    //writeln("Controller ... ");
-                    //writeln(i.controller);
 
-                    //foreach(foo; i.controller.tupleof)
-                      //writeln(foo);
-                    //writeln();
-
-                    //writeln("Entity ... ");
-                    //writeln(i.controller.entity);
-
-                    //foreach(foo; i.controller.entity.tupleof)
-                    //  writeln(foo);
-                    //writeln();
-                    //writeln((i.controller*)&hasFoundFood);
-                    // i.controller.setHome(Vector3f(1.0f, 0.5f, 1.0f));
-
-//                    i.takeFood();
-//                    writeln(i.controller.hasFoundFood);
-                }
+//              isCollision(allAnts[i].entity, allFoods[j].entity);
+              if(isCollision(allAnts[i].entity, allFoods[j].entity))
+              {
+                  debug(1) writeln("I'm hit!!");
+                  allAnts[i].entity.material = allFoods[j].entity.material;
+                  // antController.setHome(Vector3f(0.0f, 0.0f, 0.0f));
+                  allAnts[i].takeFood(allFoods[j].entity.position);
+                  allAnts[i].hasFoundFood = true;
+              }
+          }
         }
     }
 
@@ -185,11 +356,13 @@ class TestScene: Scene
       auto dz = a.position.z - b.position.z;
 
       auto distance = sqrt(dx * dx + dz * dz);
-
-      if(distance < 10)
+      // writeln(distance);
+      if(distance < 3)
           return true;
       else
           return false;
     }
+
+
 
 }

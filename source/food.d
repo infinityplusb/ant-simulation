@@ -10,8 +10,22 @@ import ant_simulation;
 
 class NewFood : EntityController
 {
+PhysicsWorld world;
+RigidBody rbody;
+
 		this(Entity e){
 				super(e);
+		}
+
+		this(Entity e, RigidBody b, PhysicsWorld w)
+    {
+        super(e);
+
+        world = w;
+
+        rbody = b;
+				b.position = e.position;
+				b.orientation = e.rotation;
 		}
 
 		override void update(double dt)
@@ -23,6 +37,7 @@ class NewFood : EntityController
             scaleMatrix(entity.scaling);
 
         entity.invTransformation = entity.transformation.inverse;
+				writefln("Food is at: %s", entity.position);
 //				writeln(dt);
     }
 }
