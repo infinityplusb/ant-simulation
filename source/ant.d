@@ -67,25 +67,25 @@ public:
 		{
 				if(foodSupply == 0)
 				{
-						writeln("Got no food");
+						// writeln("Got no food");
 						if(!hasFoundFood)
 						{
-								debug(2)				writeln("Looking for food");
+//								debug(2)				writeln("Looking for food");
 								lookForFood();
 						}
 						else
 						{
-								writefln("Going to get food at: %s", foodSupply);
+								//writefln("Going to get food at: %s", foodSupply);
 								getMoreFood();
-								writeln(foodSupply);
+//								writeln(foodSupply);
 						}
 				}
 				else
 				{
-						writefln("Food supply is: %s", foodSupply);
+//						writefln("Food supply is: %s", foodSupply);
 						if(entity.position == home)
 						{
-								writefln("At home with food");
+//								writefln("At home with food");
 //								writefln("Have I found food? %s", hasFoundFood);
 //								writefln("I have %s", foodSupply);
 //								writeln("what do I do now??");
@@ -93,9 +93,9 @@ public:
 						}
 						else
 						{
-								writefln("Returning home with food");
+//								writefln("Returning home with food");
 								goHome();
-								writeln(foodSupply);
+//								writeln(foodSupply);
 						}
 				}
 		}
@@ -211,9 +211,9 @@ public:
 
 		void dropFood()
 		{
-				debug(1) writeln("Dropping food");
+//				debug(1) writeln("Dropping food");
 				foodSupply = 0;
-				debug(1) writeln(foodSupply);
+//				debug(1) writeln(foodSupply);
 		}
 
 		void randomWalk()

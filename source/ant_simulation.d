@@ -9,6 +9,7 @@ import point;
 import location;
 import food;
 import simulator;
+import warehouse;
 
 //ant[int] antRegister;
 Food[int] foodRegister;
@@ -21,30 +22,15 @@ class MyApplication: SceneApplication
         super(1280, 720, false, "Ant Simulation", args);
 
         TestScene test = New!TestScene(sceneManager);
+        StoreScene store = New!StoreScene(sceneManager);
+//        MenuScene home = New!MenuScene(sceneManager);
+
+        sceneManager.addScene(store, "Warehouse");
         sceneManager.addScene(test, "TestScene");
 
-        sceneManager.goToScene("TestScene");
+//        sceneManager.goToScene("TestScene");
+        sceneManager.goToScene("Warehouse");
     }
-
-    /* 
-    override void run()
-    {
-        Time t;
-        while(eventManager.running)
-        {
-            eventManager.update();
-            processEvents();
-
-            t.delta = eventManager.deltaTime;
-            t.elapsed = elapsedTime;
-            elapsedTime += t.elapsed;
-
-            if(t == std.math.floor(t))
-              onUpdate(t);
-        }
-    }
-    */
-
 }
 
 void initialize()

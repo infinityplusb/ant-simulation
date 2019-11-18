@@ -37,7 +37,7 @@ RigidBody rbody;
             scaleMatrix(entity.scaling);
 
         entity.invTransformation = entity.transformation.inverse;
-				writefln("Food is at: %s", entity.position);
+//				writefln("Food is at: %s", entity.position);
 //				writeln(dt);
     }
 }
@@ -53,12 +53,12 @@ class Food {
 				foodSupplyLocation.x = _x;
 				foodSupplyLocation.y = _y;
 
-				writefln("Food has dropped at %s, %s", foodSupplyLocation.x, foodSupplyLocation.y);
+//				writefln("Food has dropped at %s, %s", foodSupplyLocation.x, foodSupplyLocation.y);
 		}
 
     void foodSwap(int foodTaken)
     {
         foodSize -= foodTaken;
-        writefln("Food at supply point %s is now %s", index, foodSize);
+//        writefln("Food at supply point %s is now %s", index, foodSize);
     }
 }

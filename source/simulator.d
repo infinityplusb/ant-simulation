@@ -136,6 +136,22 @@ class TestScene: Scene
     RigidBody bBarriers;
     RigidBody bGround;
 
+    NuklearGUI gui;
+
+    FontAsset aFontDroidSans14;
+
+    string helpTextGeneral = "Press RMB to add a random food Source";
+
+    TextLine helpText;
+    TextLine infoText;
+    TextLine messageText;
+
+//    TextLine scoreText;
+//    FontAsset aFontDroidSans20;
+
+//    uint score = 0;
+
+
     this(SceneManager smngr)
     {
         super(smngr);
@@ -185,24 +201,44 @@ class TestScene: Scene
 
         ants = createEntity3D();
 
+//        gui = New!NuklearGUI(eventManager, assetManager);
+        auto eNuklear = createEntity2D();
+
+        // HUD text
+//        helpText = New!TextLine(aFontDroidSans14.font, helpTextGeneral, assetManager);
+//        helpText.color = Color4f(1.0, 0.2, 0.6, 1.0);
+
+//        auto eText = createEntity2D();
+//        eText.drawable = helpText;
+//        eText.position = Vector3f(16.0f, 30.0f, 0.0f);
+
+
+//
+//        eNuklear.drawable = gui;
+//        scoreText = New!TextLine(aFontDroidSans20.font, "0", assetManager);
+//        scoreText.color = Color4f(0.5f, 0.5f, 0.0f, 0.8f);
+//        auto eText = createEntity2D();
+//        eText.drawable = scoreText;
+//        eText.position = Vector3f(16.0f, 30.0f, 0.0f);
+
         Vector3f[] testPolygon;
 //        testPolygon ~= Vector3f(4.79751, 4.7647, 1);
 //        testPolygon ~= Vector3f(4.79659, 4.76467, 1);
 //        testPolygon ~= Vector3f(4.79640, 4.76472, 1);
 //        testPolygon ~= Vector3f(4.79736, 4.76575, 1);
-        testPolygon ~= Vector3f(4.79751, 1, 4.7647);
-        testPolygon ~= Vector3f(4.79659, 1, -4.76467);
+        testPolygon ~= Vector3f(40.79751, 10, 4.7647);
+        testPolygon ~= Vector3f(40.79659, 10, -4.76467);
 //        testPolygon ~= Vector3f(4.79640, -4.76472, 1);
-        testPolygon ~= Vector3f(4.79736, 1, 4.76575);
+        testPolygon ~= Vector3f(40.79736, 10, 4.76575);
 
 
         auto ePlaneA = createEntity3D();
         ePlaneA.drawable = New!ShapePlane(15, 20, 1, assetManager);
         ePlaneA.material = matGround;
 
-        auto eTestPlaneB = createEntity3D();
-        eTestPlaneB.drawable = New!ShapePolygon(testPolygon, assetManager);
-        eTestPlaneB.material = matGround;
+//        auto eTestPlaneB = createEntity3D();
+//        eTestPlaneB.drawable = New!ShapePolygon(testPolygon, assetManager);
+//        eTestPlaneB.material = barrierBlack;
 
 
 // https://github.com/gecko0307/dagon/blob/289c483b91bf8b2b03c6ffc7bf66a2a1538abd69/src/dagon/graphics/shapes.d#L92
@@ -217,7 +253,7 @@ class TestScene: Scene
 
 
         // why doesn't more than 1 figure show up?
-        foreach(i; 0..1)
+        foreach(i; 0..2)
         {
             spawnAnt(i, b, world);
         }
@@ -327,25 +363,25 @@ class TestScene: Scene
 
     void findFoodCheck()
     {
-//        writeln();
         foreach(i; 0..allAnts.length)
         {
-          writefln("Ant %s looking for food.", i);
-//          writeln(allFoods.length);
           foreach(j ; 0..allFoods.length)
           {
-              writefln("Ant %s looking.", i);
 
+              writefln("%s: %s", i, j);
+              writeln(allAnts.length);
+              writeln(allFoods.length);
 
 //              isCollision(allAnts[i].entity, allFoods[j].entity);
               if(isCollision(allAnts[i].entity, allFoods[j].entity))
               {
-                  debug(1) writeln("I'm hit!!");
+                  //debug(1) writeln("I'm hit!!");
                   allAnts[i].entity.material = allFoods[j].entity.material;
                   // antController.setHome(Vector3f(0.0f, 0.0f, 0.0f));
                   allAnts[i].takeFood(allFoods[j].entity.position);
                   allAnts[i].hasFoundFood = true;
               }
+
           }
         }
     }
@@ -363,6 +399,21 @@ class TestScene: Scene
           return false;
     }
 
+    override void onMouseButtonDown(int button)
+    {
+            // Create a light ball
+        if (button == MB_RIGHT)
+        {
+    //        Vector3f pos = fpview.camera.position + fpview.camera.characterMatrix.forward * -2.0f + Vector3f(0, 1, 0);
+    //        Color4f color = lightColors[uniform(0, lightColors.length)];
+//            world = New!PhysicsWorld(assetManager);
+            auto b = world.addDynamicBody(Vector3f(0, 0, 0), 0.0f);
 
+            int i = to!int(allFoods.length);
+            spawnFood(i, b, world);
+
+    //        createLightBall(pos, color, 10.0f, lightBallRadius, 5.0f);
+        }
+    }
 
 }
