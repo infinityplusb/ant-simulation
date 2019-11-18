@@ -143,11 +143,6 @@ class TestScene: Scene
     string helpTextGeneral = "Press RMB to add a random food Source";
 
     TextLine helpText;
-    TextLine infoText;
-    TextLine messageText;
-
-//    TextLine scoreText;
-//    FontAsset aFontDroidSans20;
 
 //    uint score = 0;
 
@@ -162,6 +157,7 @@ class TestScene: Scene
         assetManager.mountDirectory("data/assets");
         iqmAnt = addIQMAsset("data/assets/mrfixit.iqm");
         aOBJFood = addOBJAsset("data/assets/crate.obj");
+        aFontDroidSans14 = addFontAsset("data/font/DroidSans.ttf", 14);
     }
 
     override void onAllocate()
@@ -202,15 +198,15 @@ class TestScene: Scene
         ants = createEntity3D();
 
 //        gui = New!NuklearGUI(eventManager, assetManager);
-        auto eNuklear = createEntity2D();
+//        auto eNuklear = createEntity2D();
 
         // HUD text
-//        helpText = New!TextLine(aFontDroidSans14.font, helpTextGeneral, assetManager);
-//        helpText.color = Color4f(1.0, 0.2, 0.6, 1.0);
+        helpText = New!TextLine(aFontDroidSans14.font, helpTextGeneral, assetManager);
+        helpText.color = Color4f(1.0, 0.2, 0.6, 1.0);
 
-//        auto eText = createEntity2D();
-//        eText.drawable = helpText;
-//        eText.position = Vector3f(16.0f, 30.0f, 0.0f);
+        auto eText = createEntity2D();
+        eText.drawable = helpText;
+        eText.position = Vector3f(16.0f, 30.0f, 0.0f);
 
 
 //

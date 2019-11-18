@@ -28,29 +28,9 @@ class MyApplication: SceneApplication
         sceneManager.addScene(store, "Warehouse");
         sceneManager.addScene(test, "TestScene");
 
-//        sceneManager.goToScene("TestScene");
-        sceneManager.goToScene("Warehouse");
+        sceneManager.goToScene("TestScene");
+//        sceneManager.goToScene("Warehouse");
     }
-}
-
-void initialize()
-{
-	 location A = new location(0, 0, 150, 200, 2);
-	// writeln(antRegister.length);
-//	location B = new location(200, 0, 100, 100, 100);
-	// writeln(antRegister.length);
-}
-
-void iterate()
-{
-	//writeln(antRegister.length);
-	//doAntThings();
-}
-
-void doAntThings()
-{
-//	foreach(ant; antRegister)
-//		ant.antAction();
 }
 
 void main(string[] args)

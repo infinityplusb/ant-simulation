@@ -15,7 +15,6 @@ class StoreScene: Scene
 
     NuklearGUI gui;
 
-
     FontAsset aFontDroidSans14;
 
     string helpTextGeneral = "Press RMB to add a random food Source";
@@ -29,6 +28,7 @@ class StoreScene: Scene
 
     override void onAssetsRequest()
     {
+        aFontDroidSans14 = addFontAsset("data/font/DroidSans.ttf", 14);
 //        assetManager.mountDirectory("data/assets");
 //        thing = addIQMAsset("data/assets/mrfixit.iqm");
     }
@@ -78,8 +78,8 @@ class StoreScene: Scene
         ePlaneA.drawable = New!ShapePlane(15, 20, 1, assetManager);
         ePlaneA.material = matGround;
 
-//        helpText = New!TextLine(aFontDroidSans14.font, helpTextGeneral, assetManager);
-//        helpText.color = Color4f(1.0, 0.2, 0.6, 1.0);
+        helpText = New!TextLine(aFontDroidSans14.font, helpTextGeneral, assetManager);
+        helpText.color = Color4f(1.0, 0.2, 0.6, 1.0);
 
         auto eText = createEntity2D();
         eText.drawable = helpText;
