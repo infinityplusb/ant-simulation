@@ -144,7 +144,7 @@ class TestScene: Scene
 
     TextLine helpText;
 
-//    uint score = 0;
+    int iteration = 0;
 
 
     this(SceneManager smngr)
@@ -197,9 +197,6 @@ class TestScene: Scene
 
         ants = createEntity3D();
 
-//        gui = New!NuklearGUI(eventManager, assetManager);
-//        auto eNuklear = createEntity2D();
-
         // HUD text
         helpText = New!TextLine(aFontDroidSans14.font, helpTextGeneral, assetManager);
         helpText.color = Color4f(1.0, 0.2, 0.6, 1.0);
@@ -207,15 +204,6 @@ class TestScene: Scene
         auto eText = createEntity2D();
         eText.drawable = helpText;
         eText.position = Vector3f(16.0f, 30.0f, 0.0f);
-
-
-//
-//        eNuklear.drawable = gui;
-//        scoreText = New!TextLine(aFontDroidSans20.font, "0", assetManager);
-//        scoreText.color = Color4f(0.5f, 0.5f, 0.0f, 0.8f);
-//        auto eText = createEntity2D();
-//        eText.drawable = scoreText;
-//        eText.position = Vector3f(16.0f, 30.0f, 0.0f);
 
         Vector3f[] testPolygon;
 //        testPolygon ~= Vector3f(4.79751, 4.7647, 1);
@@ -249,7 +237,7 @@ class TestScene: Scene
 
 
         // why doesn't more than 1 figure show up?
-        foreach(i; 0..2)
+        foreach(i; 0..10)
         {
             spawnAnt(i, b, world);
         }
@@ -350,7 +338,13 @@ class TestScene: Scene
     override void onUpdate(double dt)
     {
         super.onUpdate(dt);
+        writeln(iteration);
         findFoodCheck();
+        writeln(allAnts.length);
+        writeln(allFoods.length);
+        iteration ++;
+
+
 //        writeln(allAnts[0].foodSupply);
 
 // HELP        ants.children[1].controller.setHome(Vector3f(0.0f, 0.0f, 0.0f));
@@ -361,24 +355,25 @@ class TestScene: Scene
     {
         foreach(i; 0..allAnts.length)
         {
-          foreach(j ; 0..allFoods.length)
-          {
+            foreach(j ; 0..allFoods.length)
+            {
 
-              writefln("%s: %s", i, j);
-              writeln(allAnts.length);
-              writeln(allFoods.length);
+//                writefln("%s: %s", i, j);
 
-//              isCollision(allAnts[i].entity, allFoods[j].entity);
-              if(isCollision(allAnts[i].entity, allFoods[j].entity))
-              {
-                  //debug(1) writeln("I'm hit!!");
-                  allAnts[i].entity.material = allFoods[j].entity.material;
-                  // antController.setHome(Vector3f(0.0f, 0.0f, 0.0f));
-                  allAnts[i].takeFood(allFoods[j].entity.position);
-                  allAnts[i].hasFoundFood = true;
-              }
+  //              isCollision(allAnts[i].entity, allFoods[j].entity);
 
-          }
+/*                if(isCollision(allAnts[i].entity, allFoods[j].entity))
+                {
+                    allAnts[i].entity.material = allFoods[j].entity.material;
+                    // antController.setHome(Vector3f(0.0f, 0.0f, 0.0f));
+                    allAnts[i].takeFood(allFoods[j].entity.position);
+                    allAnts[i].hasFoundFood = true;
+                    writeln("Found new food");
+
+                }
+
+                */
+            }
         }
     }
 
@@ -397,18 +392,14 @@ class TestScene: Scene
 
     override void onMouseButtonDown(int button)
     {
-            // Create a light ball
+        // Create a FoodSource
         if (button == MB_RIGHT)
         {
-    //        Vector3f pos = fpview.camera.position + fpview.camera.characterMatrix.forward * -2.0f + Vector3f(0, 1, 0);
-    //        Color4f color = lightColors[uniform(0, lightColors.length)];
-//            world = New!PhysicsWorld(assetManager);
             auto b = world.addDynamicBody(Vector3f(0, 0, 0), 0.0f);
 
             int i = to!int(allFoods.length);
             spawnFood(i, b, world);
 
-    //        createLightBall(pos, color, 10.0f, lightBallRadius, 5.0f);
         }
     }
 
